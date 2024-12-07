@@ -46,7 +46,7 @@ def login(login, password, db: Session = Depends(get_db)):
 
     data = {
         'id': user.id,
-        'token': 'test'  # secrets.token_hex()
+        'token': secrets.token_hex()
     }
 
     json = jsonable_encoder(data)
