@@ -42,7 +42,7 @@ def login(login, password, db: Session = Depends(get_db)):
         return JSONResponse({'message': 'user not found'}, status_code=NOT_FOUND)
 
     if user.password != password:
-        return JSONResponse({'message': 'unauthorized'}, status_code=UNAUTHORIZED)
+        return JSONResponse({'message': 'incorrect password'}, status_code=BAD_REQUEST)
 
     data = {
         'id': user.id,
@@ -140,16 +140,15 @@ def add_user(login, tag, password, img='', db: Session = Depends(get_db)):
 
 
 @app.post('/add_task')
-def add_user(group_id, owner_id, name, summary, description, deadline,
+def add_task(group_id, owner_id, name, summary, description, deadline,
              status, members: list = Query(), db: Session = Depends(get_db)):
     try:
         valid_date = datetime.datetime.strptime(deadline, '%d.%m.%Y %H:%M')
     except ValueError:
         return JSONResponse({'message': 'Invalid date'}, status_code=BAD_REQUEST)
-        return JSONResponse({'message': 'Invalid date'}, status_code=BAD_REQUEST)
 
     if db.query(Task).filter(Task.name == name).first() is not None:
-        return JSONResponse({'message': 'task with same name already exists'}, status_code=BAD_REQUEST)
+        return JSONResponse({'message': 'task with same name already exist'}, status_code=BAD_REQUEST)
 
     task = Task(
         group_id=group_id,
@@ -184,7 +183,8 @@ def get_users(db: Session = Depends(get_db)):
         data.append({
             'id': item.id,
             'login': item.login,
-            'tag': item.tag
+            'tag': item.tag,
+            'profile_image': item.profile_image
         })
 
     json = jsonable_encoder(data)
@@ -202,7 +202,8 @@ def user_by_id(id, db: Session = Depends(get_db)):
         {
             'id': user.id,
             'login': user.login,
-            'tag': user.tag
+            'tag': user.tag,
+            'profile_image': user.profile_image
         },
         status_code=OK
     )
