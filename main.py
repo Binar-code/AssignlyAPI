@@ -35,7 +35,6 @@ def auth(token):
     return is_auth, id
 
 
-# Auth
 @app.get("/login")
 def login(login, password, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.login == login).first()
@@ -52,11 +51,9 @@ def login(login, password, db: Session = Depends(get_db)):
 
     json = jsonable_encoder(data)
     tokens.append(data)
-
     return JSONResponse(content=json, status_code=OK)
 
 
-# Groups list
 @app.get('/groups')
 def groups_list(token, db: Session = Depends(get_db)):
     is_auth, id = auth(token)
@@ -148,10 +145,11 @@ def add_user(group_id, owner_id, name, summary, description, deadline,
     try:
         valid_date = datetime.datetime.strptime(deadline, '%d.%m.%Y %H:%M')
     except ValueError:
-        return JSONResponse({'message': 'Invalid date'}, status_code=BAS_REQUEST)
+        return JSONResponse({'message': 'Invalid date'}, status_code=BAD_REQUEST)
+        return JSONResponse({'message': 'Invalid date'}, status_code=BAD_REQUEST)
 
     if db.query(Task).filter(Task.name == name).first() is not None:
-        return JSONResponse({'message': 'task with same name already exists'}, status_code=BAS_REQUEST)
+        return JSONResponse({'message': 'task with same name already exists'}, status_code=BAD_REQUEST)
 
     task = Task(
         group_id=group_id,
@@ -208,3 +206,19 @@ def user_by_id(id, db: Session = Depends(get_db)):
         },
         status_code=OK
     )
+
+
+@app.post('/logout')
+def logout(token):
+    is_auth, id = auth(token)
+    if not is_auth:
+        return JSONResponse({'message': 'token not found'}, status_code=BAD_REQUEST)
+
+    index = 0
+    for i, item in enumerate(tokens):
+        if item['id'] == int(id):
+            index = i
+            break
+
+    tokens.pop(index)
+    return JSONResponse({'message': 'logout successfully'}, status_code=OK)
