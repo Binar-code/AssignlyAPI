@@ -1,10 +1,18 @@
 from sqlalchemy import (
     Column, Integer, String, DateTime, ForeignKey
 )
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import declarative_base, relationship
 from sqlalchemy.sql import func
+from sqlalchemy import create_engine
 
 Base = declarative_base()
+DB_URL = "sqlite:///database.db"
+engine = create_engine(
+    DB_URL, connect_args={"check_same_thread": False}
+)
+SessionLocal = sessionmaker(autoflush=True, bind=engine)
+
 
 class User(Base):
     __tablename__ = 'users'

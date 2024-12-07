@@ -5,6 +5,7 @@ from sqlalchemy.orm import sessionmaker
 
 from models import User, Group, UserToGroup, Task, TaskToUser, Base
 
+
 def generate_data(session, ratio=10):
     faker = Faker()
     users = []
@@ -84,10 +85,11 @@ def generate_data(session, ratio=10):
     session.add_all(all_task_to_users)
     session.commit()
 
+
 if __name__ == "__main__":
     engine = create_engine('sqlite:///database.db', echo=False)
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine)
     session = Session()
-    generate_data(session, ratio=10)
+    generate_data(session, ratio=20)
