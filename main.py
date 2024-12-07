@@ -71,7 +71,8 @@ def groups_list(token, db: Session = Depends(get_db)):
                 members.append({
                     'id': user.id,
                     'login': user.login,
-                    'tag': user.tag
+                    'tag': user.tag,
+                    'profile_image': user.profile_image
                 })
             data.append({
                 'id': item.id,
