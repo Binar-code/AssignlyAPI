@@ -7,6 +7,26 @@
 3. Запустить `uvicorn main:app --reload --worker 1` для старта сервера
 4. Теперь API запущено на вашем localhost
 
+## Зависимости ##
+
+- FastAPI
+
+    `pip install fastapi`
+
+- SQLAlchemy
+
+    `pip install sqlalchemy`
+
+- Unicorn 
+
+    `pip install unicorn`
+
+    `pip install "uvicorn[standard]"`
+
+- Faker
+
+    `pip install faker`
+
 ## Основные запросы ##
 
 То, что выделено большими буквами - параметры запроса
@@ -206,26 +226,6 @@ members - id пользователей, к которым прикреплен�
 | Сообщение       | Код ошибки | Описание                       |
 |-----------------|------------|--------------------------------|
 | Token not found | 404        | Сессия пользователя не найдена |
-
-## Зависимости ##
-
-- FastAPI
-
-    `pip install fastapi`
-
-- SQLAlchemy
-
-    `pip install sqlalchemy`
-
-- Unicorn 
-
-    `pip install unicorn`
-
-    `pip install "uvicorn[standard]"`
-
-- Faker
-
-    `pip install faker`
 
 ## Коллекция в Postman ##
 
