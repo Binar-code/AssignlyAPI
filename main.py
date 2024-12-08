@@ -90,12 +90,14 @@ def groups_list(token, db: Session = Depends(get_db)):
 
 
 @app.get('/tasks')
-def tasks(token, group_id, db: Session = Depends(get_db)):
+def tasks(token, group_id, limit, offset, db: Session = Depends(get_db)):
     is_auth, id = auth(token)
     if is_auth:
         tasks = db.query(Task).filter(Task.group_id == group_id)
         data = []
-        for task in tasks:
+        cur = int(offset)
+        while cur < (int(offset) + int(limit)) and cur < tasks.count():
+            task = tasks[cur]
             users = db.query(TaskToUser).filter(TaskToUser.task_id == task.id)
             members = []
             for i in users:
@@ -117,6 +119,8 @@ def tasks(token, group_id, db: Session = Depends(get_db)):
                 'status': task.status,
                 'members': members
             })
+            cur += 1
+
         json = jsonable_encoder(data)
         return JSONResponse(content=json, status_code=OK)
     else:
