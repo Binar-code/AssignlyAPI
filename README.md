@@ -99,7 +99,7 @@
 
 Запрос:
 
-`/tasks?token=TOKEN&group_id=ID`
+`/tasks?token=TOKEN&group_id=ID&limit=LIMIT&offset=OFFSET`
 
 Ответ:
 
