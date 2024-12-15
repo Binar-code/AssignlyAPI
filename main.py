@@ -1,4 +1,5 @@
 import datetime
+from tokenize import group
 
 from fastapi import FastAPI
 from fastapi.params import Depends, Query
@@ -236,10 +237,10 @@ def logout(token):
     return JSONResponse({'message': 'logout successfully'}, status_code=OK)
 
 @app.post('/add_group')
-def add_group(token, name, description, image, owner_id, members: list = Query(), db: Session = Depends(get_db)):
+def add_group(token, name, description, image, members: list = Query(), db: Session = Depends(get_db)):
     is_auth, id = auth(token)
     if is_auth:
-        check = db.query(Group).filter(Group.name == name).first()
+        check = db.query(Group).filter(Group.name == name, Group.owner_id == id).first()
         if check is not None:
             return JSONResponse({'message': 'group already exist'}, status_code=BAD_REQUEST)
 
@@ -247,7 +248,7 @@ def add_group(token, name, description, image, owner_id, members: list = Query()
                 name = name,
                 description = description,
                 image = image,
-                owner_id = owner_id,
+                owner_id = id,
             )
 
         db.add(group)
@@ -261,7 +262,7 @@ def add_group(token, name, description, image, owner_id, members: list = Query()
 
         db.add(UserToGroup(
             group_id=group.id,
-            user_id=owner_id
+            user_id=id
         ))
         db.commit()
 
@@ -269,14 +270,17 @@ def add_group(token, name, description, image, owner_id, members: list = Query()
     return JSONResponse({'message': 'unauthorized'}, status_code=UNAUTHORIZED)
 
 @app.get('/group_by_id')
-def get_group(token, group_id, db: Session = Depends(get_db)):
+def group_by_id(token, group_id, db: Session = Depends(get_db)):
     is_auth, id = auth(token)
     if is_auth:
         group = db.get(Group, group_id)
         if group is None:
             return JSONResponse({'message:': 'group not found'}, status_code=NOT_FOUND)
 
-        if db.query(UserToGroup).filter(UserToGroup.user_id == id, UserToGroup.group_id == group.id).first() is None:
+        members = db.query(UserToGroup).filter(UserToGroup.group_id == group_id)
+        members_id = [i.id for i in members]
+
+        if id not in members_id:
             return JSONResponse({'message': 'can not access group'}, status_code=UNAUTHORIZED)
 
         return JSONResponse({
@@ -287,3 +291,7 @@ def get_group(token, group_id, db: Session = Depends(get_db)):
             'owner_id':group.owner_id
         }, status_code=OK)
     return JSONResponse({'message': 'unauthorized'}, status_code=UNAUTHORIZED)
+
+@app.get('/task_by_id')
+def task_by_id(token, group_id, task_id):
+    pass
