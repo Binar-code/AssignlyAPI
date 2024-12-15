@@ -283,21 +283,64 @@ def group_by_id(token, group_id, db: Session = Depends(get_db)):
             return JSONResponse({'message:': 'group not found'}, status_code=NOT_FOUND)
 
         members = db.query(UserToGroup).filter(UserToGroup.group_id == group_id)
-        members_id = [i.id for i in members]
+        members_id = [i.user_id for i in members]
+        print(members_id)
 
         if id not in members_id:
             return JSONResponse({'message': 'can not access group'}, status_code=UNAUTHORIZED)
+
+        data = []
+
+        for i in members_id:
+            member = db.get(User, i)
+            print(member)
+            data.append({
+                'id': member.id,
+                'login': member.login,
+                'tag': member.tag
+            })
 
         return JSONResponse({
             'id': group.id,
             'name': group.name,
             'description': group.description,
             'image': group.image,
-            'owner_id':group.owner_id
+            'owner_id':group.owner_id,
+            'members': data
         }, status_code=OK)
     else:
         return JSONResponse({'message': 'unauthorized'}, status_code=UNAUTHORIZED)
 
 @app.get('/task_by_id')
-def task_by_id(token, group_id, task_id):
-    pass
+def task_by_id(token, task_id, db: Session = Depends(get_db)):
+    is_auth, id = auth(token)
+
+    if is_auth:
+        task = db.get(Task, task_id)
+
+        if (task.owner_id != id):
+            return JSONResponse({'message': 'can not access task'}, status_code=UNAUTHORIZED)
+
+        members = db.query(TaskToUser).filter(TaskToUser.task_id == task_id)
+        data = []
+
+        for item in members:
+            member = db.get(User, item.id)
+            data.append({
+                'id': member.id,
+                'login': member.login,
+                'tag': member.tag
+            })
+
+        return JSONResponse({
+            'id': task_id,
+            'group_id': task.group_id,
+            'owner_id': task.owner_id,
+            'name': task.name,
+            'summary': task.summary,
+            'description': task.description,
+            'status': task.status,
+            'members': data
+        })
+    else:
+        return JSONResponse({'message': 'unauthorized'}, status_code=UNAUTHORIZED)
