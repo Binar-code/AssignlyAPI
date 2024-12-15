@@ -62,7 +62,7 @@ class Task(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     group_id = Column(Integer, ForeignKey('groups.id', ondelete='CASCADE'))
     owner_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'))
-    name = Column(String, nullable=False, unique=True)
+    name = Column(String, nullable=False)
     summary = Column(String, nullable=False)
     description = Column(String, nullable=False)
     deadline = Column(DateTime(timezone=True), nullable=False)

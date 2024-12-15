@@ -149,42 +149,47 @@ def add_user(login, tag, password, img='', db: Session = Depends(get_db)):
 
 
 @app.post('/add_task')
-def add_task(group_id, owner_id, name, summary, description, deadline,
+def add_task(token, group_id, name, summary, description, deadline,
              status, members: list = Query(), db: Session = Depends(get_db)):
     try:
         valid_date = datetime.datetime.strptime(deadline, '%d.%m.%Y %H:%M')
     except ValueError:
         return JSONResponse({'message': 'Invalid date'}, status_code=BAD_REQUEST)
 
-    if db.query(Task).filter(Task.name == name).first() is not None:
-        return JSONResponse({'message': 'task with same name already exist'}, status_code=BAD_REQUEST)
+    is_auth, id = auth(token)
 
-    task = Task(
-        group_id=group_id,
-        owner_id=owner_id,
-        name=name,
-        summary=summary,
-        description=description,
-        deadline=valid_date,
-        status=status
-    )
+    if is_auth:
+        if db.query(Task).filter(Task.name == name, Task.owner_id == id).first() is not None:
+            return JSONResponse({'message': 'task with same name already exist'}, status_code=BAD_REQUEST)
 
-    db.add(task)
-    db.commit()
-    id = task.id
+        task = Task(
+            group_id=group_id,
+            owner_id=id,
+            name=name,
+            summary=summary,
+            description=description,
+            deadline=valid_date,
+            status=status
+        )
 
-    for i in members:
+        db.add(task)
+        db.commit()
+        task_id = task.id
+
+        for i in members:
+            db.add(TaskToUser(
+                user_id=int(i),
+                task_id=task_id
+            ))
         db.add(TaskToUser(
-            user_id=int(i),
-            task_id=id
+            user_id=id,
+            task_id=task_id
         ))
-    db.add(TaskToUser(
-        user_id=owner_id,
-        task_id=id
-    ))
-    db.commit()
+        db.commit()
 
-    return JSONResponse({'message': 'task added successfully'}, status_code=OK)
+        return JSONResponse({'message': 'task added successfully'}, status_code=OK)
+    else:
+        return JSONResponse({'message': 'unauthorized'}, status_code=UNAUTHORIZED)
 
 
 @app.get('/users')
@@ -290,7 +295,8 @@ def group_by_id(token, group_id, db: Session = Depends(get_db)):
             'image': group.image,
             'owner_id':group.owner_id
         }, status_code=OK)
-    return JSONResponse({'message': 'unauthorized'}, status_code=UNAUTHORIZED)
+    else:
+        return JSONResponse({'message': 'unauthorized'}, status_code=UNAUTHORIZED)
 
 @app.get('/task_by_id')
 def task_by_id(token, group_id, task_id):
