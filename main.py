@@ -3,6 +3,9 @@ import datetime
 from fastapi import FastAPI
 from fastapi.params import Depends, Query
 import time
+
+from sqlalchemy.testing.suite.test_reflection import users
+
 from models import *
 from sqlalchemy.orm import Session
 from fastapi.encoders import jsonable_encoder
@@ -46,7 +49,7 @@ def login(login, password, db: Session = Depends(get_db)):
 
     data = {
         'id': user.id,
-        'token': secrets.token_hex()
+        'token': '1' # secrets.token_hex()
     }
 
     json = jsonable_encoder(data)
@@ -101,7 +104,7 @@ def tasks(token, group_id, limit, offset, db: Session = Depends(get_db)):
             users = db.query(TaskToUser).filter(TaskToUser.task_id == task.id)
             members = []
             for i in users:
-                member = db.get(User, i.id)
+                member = db.get(User, i.user_id)
                 members.append({
                     'id': member.id,
                     'login': member.login,
@@ -228,3 +231,32 @@ def logout(token):
 
     tokens.pop(index)
     return JSONResponse({'message': 'logout successfully'}, status_code=OK)
+
+@app.post('/add_group')
+def add_group(token, name, description, image, owner_id, members: list = Query(), db: Session = Depends(get_db)):
+    is_auth, id = auth(token)
+    if is_auth:
+        check = db.query(Group).filter(Group.name == name).first()
+        if check is not None:
+            return JSONResponse({'message': 'group already exist'}, status_code=BAD_REQUEST)
+
+        group = Group(
+                name = name,
+                description = description,
+                image = image,
+                owner_id = owner_id,
+            )
+
+        db.add(group)
+        db.commit()
+
+        for i in members:
+            db.add(UserToGroup(
+                group_id = group.id,
+                user_id = int(i)
+            ))
+
+        db.commit()
+
+        return JSONResponse({'message:': 'group created'}, status_code=OK)
+    return JSONResponse({'message': 'unauthorized'}, status_code=UNAUTHORIZED)

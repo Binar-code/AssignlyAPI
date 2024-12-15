@@ -24,7 +24,6 @@ class User(Base):
     profile_image = Column(String)
     created_at = Column(DateTime(timezone=True), server_default=func.current_timestamp())
 
-    # Relationships
     owned_groups = relationship('Group', back_populates='owner', cascade='all, delete-orphan')
     tasks_owned = relationship('Task', back_populates='owner', cascade='all, delete-orphan')
     tasks_assigned = relationship('TaskToUser', back_populates='user', cascade='all, delete-orphan')
