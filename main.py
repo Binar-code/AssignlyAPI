@@ -172,12 +172,15 @@ def add_task(group_id, owner_id, name, summary, description, deadline,
     db.commit()
     id = task.id
 
-    for item in members:
-        task_to_user = TaskToUser(
-            user_id=db.get(User, item).id,
+    for i in members:
+        db.add(TaskToUser(
+            user_id=int(i),
             task_id=id
-        )
-        db.add(task_to_user)
+        ))
+    db.add(TaskToUser(
+        user_id=owner_id,
+        task_id=id
+    ))
     db.commit()
 
     return JSONResponse({'message': 'task added successfully'}, status_code=OK)
@@ -256,7 +259,31 @@ def add_group(token, name, description, image, owner_id, members: list = Query()
                 user_id = int(i)
             ))
 
+        db.add(UserToGroup(
+            group_id=group.id,
+            user_id=owner_id
+        ))
         db.commit()
 
-        return JSONResponse({'message:': 'group created'}, status_code=OK)
+        return JSONResponse({'id': group.id}, status_code=OK)
+    return JSONResponse({'message': 'unauthorized'}, status_code=UNAUTHORIZED)
+
+@app.get('/group_by_id')
+def get_group(token, group_id, db: Session = Depends(get_db)):
+    is_auth, id = auth(token)
+    if is_auth:
+        group = db.get(Group, group_id)
+        if group is None:
+            return JSONResponse({'message:': 'group not found'}, status_code=NOT_FOUND)
+
+        if db.query(UserToGroup).filter(UserToGroup.user_id == id, UserToGroup.group_id == group.id).first() is None:
+            return JSONResponse({'message': 'can not access group'}, status_code=UNAUTHORIZED)
+
+        return JSONResponse({
+            'id': group.id,
+            'name': group.name,
+            'description': group.description,
+            'image': group.image,
+            'owner_id':group.owner_id
+        }, status_code=OK)
     return JSONResponse({'message': 'unauthorized'}, status_code=UNAUTHORIZED)
