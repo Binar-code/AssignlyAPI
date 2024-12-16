@@ -71,7 +71,7 @@ def groups_list(token, db: Session = Depends(get_db)):
             users = db.query(UserToGroup).filter(UserToGroup.group_id == item.id)
             members = []
             for i in users:
-                user = db.get(User, i.id)
+                user = db.get(User, i.user_id)
                 members.append({
                     'id': user.id,
                     'login': user.login,
@@ -177,6 +177,8 @@ def add_task(token, group_id, name, summary, description, deadline,
         task_id = task.id
 
         for i in members:
+            if not i:
+                break
             db.add(TaskToUser(
                 user_id=int(i),
                 task_id=task_id
@@ -187,7 +189,7 @@ def add_task(token, group_id, name, summary, description, deadline,
         ))
         db.commit()
 
-        return JSONResponse({'message': 'task added successfully'}, status_code=OK)
+        return JSONResponse({'id': task.id}, status_code=OK)
     else:
         return JSONResponse({'message': 'unauthorized'}, status_code=UNAUTHORIZED)
 
@@ -260,6 +262,8 @@ def add_group(token, name, description, image, members: list = Query(), db: Sess
         db.commit()
 
         for i in members:
+            if not i:
+                break
             db.add(UserToGroup(
                 group_id = group.id,
                 user_id = int(i)
@@ -325,7 +329,7 @@ def task_by_id(token, task_id, db: Session = Depends(get_db)):
         data = []
 
         for item in members:
-            member = db.get(User, item.id)
+            member = db.get(User, item.user_id)
             data.append({
                 'id': member.id,
                 'login': member.login,
@@ -342,5 +346,20 @@ def task_by_id(token, task_id, db: Session = Depends(get_db)):
             'status': task.status,
             'members': data
         })
+    else:
+        return JSONResponse({'message': 'unauthorized'}, status_code=UNAUTHORIZED)
+
+@app.post("/status_change")
+def status_change(token, task_id, status, db: Session = Depends(get_db)):
+    is_auth, id = auth(token)
+
+    if is_auth:
+        task = db.get(Task, task_id)
+        if task.owner_id != id:
+            return JSONResponse({'message': 'can not access task'}, status_code=UNAUTHORIZED)
+        db.query(Task).filter(Task.id == task_id).update({Task.status: status})
+        db.commit()
+        return JSONResponse({'message': 'status updated'}, status_code=OK)
+
     else:
         return JSONResponse({'message': 'unauthorized'}, status_code=UNAUTHORIZED)
