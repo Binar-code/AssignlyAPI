@@ -1,22 +1,22 @@
 import datetime
-from tokenize import group
 
 from fastapi import FastAPI
-from fastapi.params import Depends, Query
-import time
-
-from sqlalchemy.testing.suite.test_reflection import users
-
-from models import *
-from sqlalchemy.orm import Session
+from fastapi import UploadFile
 from fastapi.encoders import jsonable_encoder
+from fastapi.params import Depends, Query, File, Form
 from fastapi.responses import JSONResponse
-import secrets
+from sqlalchemy.orm import Session
+
 from codes import *
+from models import *
 
 tokens = []
 Base.metadata.create_all(bind=engine)
 app = FastAPI()
+
+STATIC_DIR = './static'
+PROFILE_PIC_DIR = f'{STATIC_DIR}/profiles'
+GROUP_PIC_DIR = f'{STATIC_DIR}/groups'
 
 
 def get_db():
@@ -131,8 +131,12 @@ def tasks(token, group_id, limit, offset, db: Session = Depends(get_db)):
         return JSONResponse({'message': 'unauthorized'}, status_code=UNAUTHORIZED)
 
 
-@app.post('/signup')
-def add_user(login, tag, password, img='', db: Session = Depends(get_db)):
+@app.post('/signup', response_model=None)
+def add_user(login: str = Form(...),
+             tag: str = Form(...),
+             password: str = Form(...),
+             img: UploadFile = File(None),
+             db: Session = Depends(get_db)):
     if (db.query(User).filter(User.login == login).first() is not None
             or db.query(User).filter(User.tag == tag).first() is not None):
         return JSONResponse({'message': 'User already exist'}, status_code=CONFLICT)
@@ -141,11 +145,17 @@ def add_user(login, tag, password, img='', db: Session = Depends(get_db)):
         login=login,
         tag=tag,
         password=password,
-        profile_image=img
     )
+
+    if img:
+        file_path = f"{PROFILE_PIC_DIR}/{img.filename}"
+        with open(file_path, "wb") as f:
+            f.write(img.file.read())
+        user.profile_image = file_path
+
     db.add(user)
     db.commit()
-    return JSONResponse({'message': 'User added successfully'}, status_code=OK)
+    return JSONResponse({'id': user.id}, status_code=OK)
 
 
 @app.post('/add_task')
@@ -244,7 +254,12 @@ def logout(token):
     return JSONResponse({'message': 'logout successfully'}, status_code=OK)
 
 @app.post('/add_group')
-def add_group(token, name, description, image, members: list = Query(), db: Session = Depends(get_db)):
+def add_group(
+        token: str = Form(...),
+        name: str = Form(...),
+        description: str = Form(...),
+        image: UploadFile = File(None),
+        members: list = Form, db: Session = Depends(get_db)):
     is_auth, id = auth(token)
     if is_auth:
         check = db.query(Group).filter(Group.name == name, Group.owner_id == id).first()
@@ -254,9 +269,14 @@ def add_group(token, name, description, image, members: list = Query(), db: Sess
         group = Group(
                 name = name,
                 description = description,
-                image = image,
-                owner_id = id,
+                owner_id = id
             )
+
+        if image:
+            file_path = f'{GROUP_PIC_DIR}/{image.filename}'
+            with open(file_path, 'wb') as f:
+                f.write(image.file.read())
+            group.image = file_path
 
         db.add(group)
         db.commit()
