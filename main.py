@@ -6,6 +6,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.params import Depends, Query, File, Form
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
+from starlette.responses import FileResponse
 
 from codes import *
 from models import *
@@ -38,6 +39,10 @@ def auth(token):
 
     return is_auth, id
 
+@app.get("/get_image")
+def get_image(path: str = Form(...)):
+    return FileResponse(path = path)
+
 
 @app.get("/login")
 def login(login, password, db: Session = Depends(get_db)):
@@ -56,7 +61,6 @@ def login(login, password, db: Session = Depends(get_db)):
     json = jsonable_encoder(data)
     tokens.append(data)
     return JSONResponse(content=json, status_code=OK)
-
 
 @app.get('/groups')
 def groups_list(token, db: Session = Depends(get_db)):

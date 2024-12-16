@@ -16,7 +16,7 @@ def generate_data(session, ratio=10):
             login=login,
             tag=tag,
             password=faker.password(),
-            profile_image=faker.image_url()
+            profile_image='./static/profiles/pic.webp'
         )
         users.append(user)
     session.add_all(users)
@@ -28,7 +28,7 @@ def generate_data(session, ratio=10):
         group = Group(
             name=group_name,
             description=faker.text(max_nb_chars=50),
-            image=faker.image_url(),
+            image='./static/groups/pic.webp',
             owner_id=user.id
         )
         groups.append(group)
