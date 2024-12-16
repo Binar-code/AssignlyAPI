@@ -24,7 +24,6 @@ class User(Base):
     profile_image = Column(String)
     created_at = Column(DateTime(timezone=True), server_default=func.current_timestamp())
 
-    # Relationships
     owned_groups = relationship('Group', back_populates='owner', cascade='all, delete-orphan')
     tasks_owned = relationship('Task', back_populates='owner', cascade='all, delete-orphan')
     tasks_assigned = relationship('TaskToUser', back_populates='user', cascade='all, delete-orphan')
@@ -35,7 +34,7 @@ class Group(Base):
     __tablename__ = 'groups'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String, nullable=False, unique=True)
+    name = Column(String, nullable=False)
     description = Column(String)
     image = Column(String)
     owner_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'))
@@ -63,7 +62,7 @@ class Task(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     group_id = Column(Integer, ForeignKey('groups.id', ondelete='CASCADE'))
     owner_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'))
-    name = Column(String, nullable=False, unique=True)
+    name = Column(String, nullable=False)
     summary = Column(String, nullable=False)
     description = Column(String, nullable=False)
     deadline = Column(DateTime(timezone=True), nullable=False)
