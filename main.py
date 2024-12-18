@@ -1,4 +1,5 @@
 import datetime
+import json
 
 from fastapi import FastAPI
 from fastapi import UploadFile
@@ -39,9 +40,10 @@ def auth(token):
 
     return is_auth, id
 
+
 @app.get("/get_image")
 def get_image(path: str = Form(...)):
-    return FileResponse(path = path)
+    return FileResponse(path=path)
 
 
 @app.get("/login")
@@ -55,12 +57,13 @@ def login(login, password, db: Session = Depends(get_db)):
 
     data = {
         'id': user.id,
-        'token': '1' # secrets.token_hex()
+        'token': '1'  # secrets.token_hex()
     }
 
     json = jsonable_encoder(data)
     tokens.append(data)
     return JSONResponse(content=json, status_code=OK)
+
 
 @app.get('/groups')
 def groups_list(token, db: Session = Depends(get_db)):
@@ -190,11 +193,12 @@ def add_task(token, group_id, name, summary, description, deadline,
         db.commit()
         task_id = task.id
 
-        for i in members:
+        data = json.loads(members[0])
+        for i in data:
             if not i:
                 break
             db.add(TaskToUser(
-                user_id=int(i),
+                user_id=int(i['id']),
                 task_id=task_id
             ))
         db.add(TaskToUser(
@@ -257,6 +261,7 @@ def logout(token):
     tokens.pop(index)
     return JSONResponse({'message': 'logout successfully'}, status_code=OK)
 
+
 @app.post('/add_group')
 def add_group(
         token: str = Form(...),
@@ -271,10 +276,10 @@ def add_group(
             return JSONResponse({'message': 'group already exist'}, status_code=BAD_REQUEST)
 
         group = Group(
-                name = name,
-                description = description,
-                owner_id = id
-            )
+            name=name,
+            description=description,
+            owner_id=id
+        )
 
         if image:
             file_path = f'{GROUP_PIC_DIR}/{image.filename}'
@@ -284,13 +289,13 @@ def add_group(
 
         db.add(group)
         db.commit()
-
-        for i in members:
+        data = json.loads(members[0])
+        for i in data:
             if not i:
                 break
             db.add(UserToGroup(
-                group_id = group.id,
-                user_id = int(i)
+                group_id=group.id,
+                user_id=int(i['id'])
             ))
 
         db.add(UserToGroup(
@@ -301,6 +306,7 @@ def add_group(
 
         return JSONResponse({'id': group.id}, status_code=OK)
     return JSONResponse({'message': 'unauthorized'}, status_code=UNAUTHORIZED)
+
 
 @app.get('/group_by_id')
 def group_by_id(token, group_id, db: Session = Depends(get_db)):
@@ -333,11 +339,12 @@ def group_by_id(token, group_id, db: Session = Depends(get_db)):
             'name': group.name,
             'description': group.description,
             'image': group.image,
-            'owner_id':group.owner_id,
+            'owner_id': group.owner_id,
             'members': data
         }, status_code=OK)
     else:
         return JSONResponse({'message': 'unauthorized'}, status_code=UNAUTHORIZED)
+
 
 @app.get('/task_by_id')
 def task_by_id(token, task_id, db: Session = Depends(get_db)):
@@ -372,6 +379,7 @@ def task_by_id(token, task_id, db: Session = Depends(get_db)):
         })
     else:
         return JSONResponse({'message': 'unauthorized'}, status_code=UNAUTHORIZED)
+
 
 @app.post("/status_change")
 def status_change(token, task_id, status, db: Session = Depends(get_db)):
