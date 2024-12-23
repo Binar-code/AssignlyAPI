@@ -159,9 +159,28 @@ def add_user(login: str = Form(...),
         with open(file_path, "wb") as f:
             f.write(img.file.read())
         user.profile_image = file_path
+    else:
+        user.profile_image = f'{GROUP_PIC_DIR}/placeholder.webp'
 
     db.add(user)
     db.commit()
+
+    group = Group(
+        name='Personal',
+        description='Your personal group',
+        image=f'{GROUP_PIC_DIR}/personal.png',
+        owner_id=user.id
+    )
+    db.add(group)
+    db.commit()
+
+    user_to_group = UserToGroup(
+        group_id=group.id,
+        user_id=user.id
+    )
+    db.add(user_to_group)
+    db.commit()
+
     return JSONResponse({'id': user.id}, status_code=OK)
 
 
@@ -286,6 +305,8 @@ def add_group(
             with open(file_path, 'wb') as f:
                 f.write(image.file.read())
             group.image = file_path
+        else:
+            group.image = f'{GROUP_PIC_DIR}/placeholder.webp'
 
         db.add(group)
         db.commit()
